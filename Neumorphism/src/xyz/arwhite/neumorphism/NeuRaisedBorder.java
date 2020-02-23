@@ -24,110 +24,197 @@
 
 package xyz.arwhite.neumorphism;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
-import java.awt.Stroke;
 import java.awt.Transparency;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
+import java.awt.geom.Dimension2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.ConvolveOp;
-import java.awt.image.Kernel;
-
 import javax.swing.border.Border;
 
 public class NeuRaisedBorder implements Border {
 
-	private static Color riseColor = new Color(0xff,0xff,0xff, 0x66);
-	private static Color fallColor = new Color(0xd1,0xcd,0xc7, 0x66);
+	private double scaleFactorX = 1.0f;
+	private double scaleFactorY = 1.0f;
 	
-	private BufferedImage image;
-	private BufferedImage blurredImage;
+	private double ourScaleX = 1.0f;
+	private double ourScaleY = 1.0f;
+	
+	private Color riseColor = new Color(255,255,255,128);
+	private Color fallColor = new Color(0xd1,0xcd,0xc7, 128);
+	
+	/*
+	 * Image containing neumorphic borders
+	 */
+	private BufferedImage cachedImage;
+	
+	// RoundRectangle2D borderRect;
 	private Graphics2D ig2D;
 	
 	private Color mergeColor = new Color(0xef, 0xee, 0xee, 0xff);
-	
+	// private Color mergeColor = Color.DARK_GRAY;
+
 	private int borderWidth = 16;
-	private int shadowOffset = 6;
+	private double adjBorderWidth = (double)borderWidth * scaleFactorX;
 	
-	public NeuRaisedBorder() {
-		
+	private int shadowOffset = 6;
+	private double adjShadowOffset = (double)shadowOffset * scaleFactorX;
+	
+	private boolean blurShadows = true;
+	
+	private double adjWidth = 0.0f;
+	private double adjHeight = 0.0f;
+	
+	private double adjInnerWidth = 0.0f;
+	private double adjInnerHeight = 0.0f;
+
+	public NeuRaisedBorder(int borderWidth) {
+		this.borderWidth = borderWidth;
 	}
 
 	@Override
 	public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
 		Graphics2D g2D = (Graphics2D) g;
+
+		/*
+		 * Determine the scaling the system has directed by applied
+		 */
+		var deviceTransform = g2D.getDeviceConfiguration().getDefaultTransform();
+		scaleFactorX = deviceTransform.getScaleX();
+		scaleFactorY = deviceTransform.getScaleY();
 		
-		int bx = x + borderWidth;
-		int by = y + borderWidth;
-		int bw = width-(2*borderWidth);
-		int bh = height-(2*borderWidth);
+		/*
+		 * As we will be negating the scaling, we'll note the scaled width and height
+		 */
+		adjWidth = (double)width * scaleFactorX;
+		adjHeight = (double)height * scaleFactorY; 
 		
-		if ( image == null || c.getHeight() != image.getHeight() || c.getWidth() != image.getWidth() ) {
-			System.out.println(this.getClass().getName()+" creating raised border image");
-			image = g2D.getDeviceConfiguration().createCompatibleImage(width, height, Transparency.TRANSLUCENT);
-			blurredImage = g2D.getDeviceConfiguration().createCompatibleImage(width, height, Transparency.TRANSLUCENT);
+		/*
+		 * Rebuild the image containing the border shadows if necessary
+		 * 
+		 * Reasons:
+		 * 1. There is no cached image
+		 * 2. We've been moved to a monitor with a different scale from the prior one
+		 * 3. For some reason the component has changed shape
+		 */
+		if ( cachedImage == null 
+				|| ourScaleX != scaleFactorX || ourScaleY != scaleFactorY 
+				|| c.getHeight() != cachedImage.getHeight() 
+				|| c.getWidth() != cachedImage.getWidth()) {
 			
-			ig2D = image.createGraphics();
+			/*
+			 * Scale the border width and shadow offsets according the device needs
+			 */
+			adjBorderWidth = (double)borderWidth * scaleFactorX;
+			adjShadowOffset = (double)shadowOffset * scaleFactorX;
+			
+			/*
+			 * Size our rectangle that defines the innermost boundary of the border
+			 */
+			adjInnerWidth = adjWidth - ( 2.0f * adjBorderWidth );
+			adjInnerHeight = adjHeight - ( 2.0f * adjBorderWidth );
+			
+			/*
+			 * Note the device scale at which the image needs to be built
+			 */
+			ourScaleX = scaleFactorX; ourScaleY = scaleFactorY;
+			
+			/*
+			 * Trigger rebuild of background image with new scale
+			 */
+			cachedImage = null;
+		}
+		
+		/*
+		 * Define the outer boundary of our border, scaled for the device
+		 */
+		RoundRectangle2D outerRect = new RoundRectangle2D.Double(
+				x, y, adjWidth ,adjHeight, 32.0f, 32.0f);
+		
+		/*
+		 * Define the inner boundary of our border, scaled for the device
+		 */
+		RoundRectangle2D innerRect = new RoundRectangle2D.Double(
+				x + adjBorderWidth, y + adjBorderWidth, adjInnerWidth ,adjInnerHeight, 32.0f, 32.0f);
+		
+		/* 
+		 * Rebuild the image if required
+		 */
+		if ( cachedImage == null ) {
+			
+			BufferedImage rawImage = g2D.getDeviceConfiguration().createCompatibleImage(
+					(int)Math.round(adjWidth), (int)Math.round(adjHeight), Transparency.TRANSLUCENT);
+			ig2D = rawImage.createGraphics();
 			
 			/*
 			 * Fill the image with the background of the surrounding UI element it's to merge with
 			 */
 			ig2D.setColor(mergeColor);
-			ig2D.fillRect(x, y, width, height);
-		
-			/*
-			 * Create the shapes for the highlight and drop shadow
-			 */
-			RoundRectangle2D riseRect = new RoundRectangle2D.Double(bx-shadowOffset,by-shadowOffset,bw,bh,12.0f,12.0f);
-			RoundRectangle2D fallRect = new RoundRectangle2D.Double(bx+shadowOffset,by+shadowOffset,bw,bh,12.0f,12.0f);
+			ig2D.fillRect(x, y, rawImage.getWidth(), rawImage.getHeight());
 
+			/*
+			 * Draw the background border shapes
+			 */
 			ig2D.setColor(riseColor);
-			ig2D.fill(riseRect);
+			ig2D.translate(-adjShadowOffset, -adjShadowOffset);
+			ig2D.fill(innerRect);
 			
 			ig2D.setColor(fallColor);
-			ig2D.fill(fallRect);
+			ig2D.translate(2.0f*adjShadowOffset, 2.0*adjShadowOffset);
+			ig2D.fill(innerRect);
+					
+			ig2D.dispose();
 			
 			/*
 			 * Blur the resulting image to blend with the background
 			 */
-			ImageUtils.blur2(image, blurredImage);
+			cachedImage = g2D.getDeviceConfiguration().createCompatibleImage(
+					rawImage.getWidth(), rawImage.getHeight(), Transparency.TRANSLUCENT);
+			
+			if ( blurShadows )
+				ImageUtils.blur2(rawImage, cachedImage);
+			else
+				cachedImage = rawImage;
+			
+//			/*
+//			 * Add 1px border to the button
+//			 */
+//			borderRect = new RoundRectangle2D.Double(bx, by, bw, bh, 12.0f, 12.0f);
+//			Graphics2D blur2D = blurredImage.createGraphics();
+//			blur2D.fill(borderRect);
+//			blur2D.dispose();
+
 		}
 		
 		/*
 		 * Set the clip shape to only draw outside the actual button
 		 */
-		RoundRectangle2D allRect = new RoundRectangle2D.Double(x, y, width, height, 12.0f, 12.0f);
-		RoundRectangle2D panelRect = new RoundRectangle2D.Double(bx, by, bw, bh, 12.0f, 12.0f);
-		Area allArea = new Area(allRect);
-		Area panelArea = new Area(panelRect);
+		var saveTransform = g2D.getTransform();
+		
+		AffineTransform ourTransform = g2D.getTransform();
+		ourTransform.scale(1.0f/ourScaleX, 1.0f/ourScaleY);
+		g2D.setTransform(ourTransform);		
+
+		Area allArea = new Area(outerRect);
+		Area panelArea = new Area(innerRect);
 		allArea.subtract(panelArea);
 		
 		var saveClip = g2D.getClip();
 		g2D.setClip(allArea);
-		
-		g2D.drawImage(blurredImage, x, y, null);
+
+		/*
+		 * Finally render our neumorphic border image, clipped as needed
+		 */
+		g2D.drawImage(cachedImage, x, y, null);
 		
 		g2D.setClip(saveClip);
-		
-		/*
-		 * Design says there's a small transparent(ish) border round the button
-		 * Note this depends on the button content not drawing a background as 
-		 * this technically draws in it's space
-		 */
-		Stroke saveStroke = g2D.getStroke();
-		Color saveColor = g2D.getColor();
-		
-		g2D.setStroke(new BasicStroke(1));
-		g2D.setColor(new Color(1.0f,1.0f,1.0f,0.2f));
-		g2D.draw(panelRect);
-		
-		g2D.setColor(saveColor);
-		g2D.setStroke(saveStroke);
+		g2D.setTransform(saveTransform);
 	}
 
 	@Override
@@ -140,4 +227,69 @@ public class NeuRaisedBorder implements Border {
 		return false;
 	}
 	
+	public boolean isBlurShadows() {
+		return blurShadows;
+	}
+
+	public void setBlurShadows(boolean blurShadows) {
+		if ( blurShadows != this.blurShadows )
+			cachedImage = null;
+		
+		this.blurShadows = blurShadows;
+	}
+
+	public Color getRiseColor() {
+		return riseColor;
+	}
+
+	public void setRiseColor(Color riseColor) {
+		if ( riseColor != this.riseColor )
+			cachedImage = null;
+		
+		this.riseColor = riseColor;
+	}
+
+	public Color getFallColor() {
+		return fallColor;
+	}
+
+	public void setFallColor(Color fallColor) {
+		if ( fallColor != this.fallColor )
+			cachedImage = null;
+		
+		this.fallColor = fallColor;
+	}
+
+	public Color getMergeColor() {
+		return mergeColor;
+	}
+
+	public void setMergeColor(Color mergeColor) {
+		if ( mergeColor != this.mergeColor )
+			cachedImage = null;
+		
+		this.mergeColor = mergeColor;
+	}
+
+	public int getBorderWidth() {
+		return borderWidth;
+	}
+
+	public void setBorderWidth(int borderWidth) {
+		if ( borderWidth != this.borderWidth )
+			cachedImage = null;
+		
+		this.borderWidth = borderWidth;
+	}
+
+	public int getShadowOffset() {
+		return shadowOffset;
+	}
+
+	public void setShadowOffset(int shadowOffset) {
+		if ( shadowOffset != this.shadowOffset )
+			cachedImage = null;
+		
+		this.shadowOffset = shadowOffset;
+	}
 }

@@ -29,17 +29,32 @@ import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 
 public class ImageUtils {
+	
+//	static float guassianKernel[] = {
+//			0.00134f, 0.00408f, 0.00794f, 0.00992f, 0.00794f, 0.00408f, 0.00134f, 
+//			0.00408f, 0.01238f, 0.02412f, 0.03012f, 0.02412f, 0.01238f, 0.00408f, 
+//			0.00794f, 0.02412f, 0.04698f, 0.05867f, 0.04698f, 0.02412f, 0.00794f, 
+//			0.00992f, 0.03012f, 0.05867f, 0.07327f, 0.05867f, 0.03012f, 0.00992f, 
+//			0.00794f, 0.02412f, 0.04698f, 0.05867f, 0.04698f, 0.02412f, 0.00794f, 
+//			0.00408f, 0.01238f, 0.02412f, 0.03012f, 0.02412f, 0.01238f, 0.00408f, 
+//			0.00134f, 0.00408f, 0.00794f, 0.00992f, 0.00794f, 0.00408f, 0.00134f 
+//	};
+	
+	static float guassianKernel[] = {	
 
-	static float blurValue = 1.0f/49.0f;
-	static float data[] = new float[49];
-	static {
-		for (int i=0;i<49;i++) 
-			data[i] = blurValue;
-	}
+			0.020013f, 	0.020209f, 	0.020328f, 	0.020367f, 	0.020328f, 	0.020209f, 	0.020013f, 
+			0.020209f, 	0.020407f, 	0.020527f, 	0.020567f, 	0.020527f, 	0.020407f, 	0.020209f, 
+			0.020328f, 	0.020527f, 	0.020648f, 	0.020688f, 	0.020648f, 	0.020527f, 	0.020328f, 
+			0.020367f, 	0.020567f, 	0.020688f, 	0.020729f, 	0.020688f, 	0.020567f, 	0.020367f, 
+			0.020328f, 	0.020527f, 	0.020648f, 	0.020688f, 	0.020648f, 	0.020527f, 	0.020328f, 
+			0.020209f, 	0.020407f, 	0.020527f, 	0.020567f, 	0.020527f, 	0.020407f, 	0.020209f, 
+			0.020013f, 	0.020209f, 	0.020328f, 	0.020367f, 	0.020328f, 	0.020209f, 	0.020013f
+
+	};
 	
 	public static BufferedImage blur2(BufferedImage image, BufferedImage blurredImage) {
 		
-		Kernel kernel = new Kernel(7,7,data);
+		Kernel kernel = new Kernel(7,7,guassianKernel);
 		ConvolveOp convolve = new ConvolveOp(kernel, ConvolveOp.EDGE_NO_OP, null);
 		convolve.filter(image, blurredImage);
 		
