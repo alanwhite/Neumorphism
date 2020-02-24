@@ -1,19 +1,27 @@
 # Neumorphism
 
-Exploring the neumorphic UI element trend in Java, just for fun.
+Exploring the neumorphic UI element trend, but in Java, just for fun.
+
+![](images/buttons.png)
+
 There's a few challenges to overcome in the AWT/Swing world. The first thing to do is prevent AWT
 scaling your images, provide or draw images at the correct scale for the default resolution of
-the monitor in use, otherwise everythign just gets blurry the wrong way.
+the monitor in use, otherwise everything just gets blurry the wrong way.
 
 Next is blurring deliberately, apply Gaussian smoothing. Only way it seems to do this with AWT is
-using a ConvolveOp on an image, you can't blur the existing background, or at least I haven't 
-found a way yet.
+using a ConvolveOp on an image, you can't blur the underlying background provided by other components, 
+or at least, I haven't found a way yet.
 
 More to explore, more to learn.
 
 ## Getting Started
 
 Clone to your local computer and fire up eclipse.
+
+Example1.java is main workhorse, building up the other components as Swing pluggable Look & Feel objects,
+so one day maybe there can be whole neumorphic LaF.
+
+Initial focus is buttons, toggle, groups and straight action ones.
 
 ### Prerequisites
 
