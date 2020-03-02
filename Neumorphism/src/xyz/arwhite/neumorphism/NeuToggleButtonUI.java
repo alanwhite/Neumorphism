@@ -38,12 +38,14 @@ import javax.swing.BorderFactory;
 import javax.swing.ButtonModel;
 import javax.swing.Icon;
 import javax.swing.JComponent;
+import javax.swing.JToggleButton;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.ComponentUI;
 import javax.swing.plaf.basic.BasicButtonUI;
+import javax.swing.plaf.basic.BasicToggleButtonUI;
 
-public class NeuButtonUI extends BasicButtonUI implements MouseListener {
+public class NeuToggleButtonUI extends BasicToggleButtonUI implements MouseListener {
 
 	@Override
 	public void paint(Graphics g, JComponent c) {
@@ -53,7 +55,7 @@ public class NeuButtonUI extends BasicButtonUI implements MouseListener {
 	public static Color dsBlue = new Color(4,113,186);
 	public static Color dsRed = new Color(0xc2186b);
 
-	private final static NeuButtonUI neuButtonUI = new NeuButtonUI();
+	private final static NeuToggleButtonUI neuButtonUI = new NeuToggleButtonUI();
 	private NeuRaisedBorder raisedBorder;
 	private NeuLoweredBorder loweredBorder;
 	private Component parent;
@@ -61,7 +63,7 @@ public class NeuButtonUI extends BasicButtonUI implements MouseListener {
 	private int borderSize = 16; 
 	private int marginSize =5;
 
-	public NeuButtonUI() {
+	public NeuToggleButtonUI() {
 		raisedBorder = new NeuRaisedBorder(borderSize, marginSize);
 		loweredBorder = new NeuLoweredBorder(borderSize, marginSize);
 	}
@@ -73,7 +75,10 @@ public class NeuButtonUI extends BasicButtonUI implements MouseListener {
 	public void installUI(JComponent c) {
 		super.installUI(c);
 
-		c.setBorder(raisedBorder);
+		if ( !(c instanceof JToggleButton) ) 
+			return;
+		
+		setBorderByState((JToggleButton) c);
 		parent = c;
 		c.setFont(new Font("Roboto", Font.PLAIN, 16));
 		c.setForeground(dsBlue);
@@ -81,6 +86,13 @@ public class NeuButtonUI extends BasicButtonUI implements MouseListener {
 
 		c.addMouseListener(this);
 		//		c.addKeyListener(this);
+	}
+	
+	private void setBorderByState(JToggleButton btn) {
+		if ( btn.isSelected() )
+			btn.setBorder(loweredBorder);
+		else
+			btn.setBorder(raisedBorder);
 	}
 
 	public void uninstallUI(JComponent c) {
@@ -117,26 +129,34 @@ public class NeuButtonUI extends BasicButtonUI implements MouseListener {
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		((JComponent)e.getSource()).setBorder(loweredBorder);
+		setBorderByState((JToggleButton) e.getSource());
+		// ((JComponent)e.getSource()).setBorder(loweredBorder);
 	}
 	
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
-		((JComponent)e.getSource()).setBorder(raisedBorder);
+		setBorderByState((JToggleButton) e.getSource());
+		// ((JComponent)e.getSource()).setBorder(raisedBorder);
 	}
 
 	@Override
 	public void mouseEntered(MouseEvent e) {
-		raisedBorder.setShadowOffset(
-				raisedBorder.getShadowOffset() + 2);
-		((Component)e.getSource()).setForeground(dsRed);
+		JToggleButton btn = (JToggleButton) e.getSource();
+		if ( !btn.isSelected() ) {
+			raisedBorder.setShadowOffset(
+					raisedBorder.getShadowOffset() + 2);
+			((Component)e.getSource()).setForeground(dsRed);
+		}
 	}
 
 	@Override
 	public void mouseExited(MouseEvent e) {
-		raisedBorder.setShadowOffset(
-				raisedBorder.getShadowOffset() - 2);
+		JToggleButton btn = (JToggleButton) e.getSource();
+		if ( !btn.isSelected() ) 
+			raisedBorder.setShadowOffset(
+					raisedBorder.getShadowOffset() - 2);
+
 		((Component)e.getSource()).setForeground(dsBlue);
 	}
 

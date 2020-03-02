@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ImageIcon;
@@ -46,6 +47,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -55,12 +57,10 @@ import javax.swing.border.CompoundBorder;
 @SuppressWarnings("serial")
 public class Example1 extends JFrame {
 
-	JButton btnButton = new JButton("Compose ", new ImageIcon(loadNewBtnImage("new-score",32)));	
-	JButton btnButton_1 = new JButton("Open ", new ImageIcon(loadNewBtnImage("open-score",32)));
-	// JButton btnButton_1 = new JButton("Open ");
-	
-	JButton btnButton_2 = new JButton("Button 3");
-	JButton[] buttons = { btnButton, btnButton_1, btnButton_2 };
+	JButton btnCompose = new JButton("Compose ", new ImageIcon(loadNewBtnImage("new-score",32)));	
+	JButton btnOpen = new JButton("Open ", new ImageIcon(loadNewBtnImage("open-score",32)));
+	JToggleButton btnBold = new JToggleButton("Bold");
+	AbstractButton[] buttons = { btnCompose, btnOpen, btnBold };
 
 	ComponentSettingsCard buttonCard = new ComponentSettingsCard();
 	ComponentSettingsCard panelCard = new ComponentSettingsCard();
@@ -87,9 +87,9 @@ public class Example1 extends JFrame {
 		contentPane.add(props, BorderLayout.SOUTH);
 
 		toolBar.setBackground(backgroundColor); toolBar.setFloatable(false);
-		toolBar.add(Box.createHorizontalGlue()); toolBar.add(btnButton);
-		toolBar.add(Box.createHorizontalGlue()); toolBar.add(btnButton_1);
-		toolBar.add(Box.createHorizontalGlue()); toolBar.add(btnButton_2);
+		toolBar.add(Box.createHorizontalGlue()); toolBar.add(btnCompose);
+		toolBar.add(Box.createHorizontalGlue()); toolBar.add(btnOpen);
+		toolBar.add(Box.createHorizontalGlue()); toolBar.add(btnBold);
 		toolBar.add(Box.createHorizontalGlue());
 
 		mainPanel.setLayout(new BorderLayout()); 
@@ -112,14 +112,13 @@ public class Example1 extends JFrame {
 
 		add(createContentPane());
 
-		btnButton.setUI(new NeuButtonUI());
-		btnButton_1.setUI(new NeuButtonUI());
-		// btnButton_1.setEnabled(false);
-		btnButton_2.setUI(new NeuButtonUI());
+		btnCompose.setUI(new NeuButtonUI());
+		btnOpen.setUI(new NeuButtonUI());
+		btnBold.setUI(new NeuToggleButtonUI());
 
-		btnButton.addActionListener(System.out::println);
-		btnButton_1.addActionListener(System.out::println);
-		btnButton_2.addActionListener(System.out::println);
+		btnCompose.addActionListener(System.out::println);
+		btnOpen.addActionListener(System.out::println);
+		btnBold.addActionListener(System.out::println);
 
 		/*
 		 * Button Customisation Controls
@@ -128,15 +127,14 @@ public class Example1 extends JFrame {
 		buttonCard.getBorderSlider().addChangeListener(l -> {
 			if (!buttonCard.getBorderSlider().getValueIsAdjusting()) {
 				for ( int i = 0; i < buttons.length; i++ ) 
-					((NeuButtonUI)buttons[i].getUI()).setBorderWidth(buttonCard.getBorderSlider().getValue());
+					((NeuButtonUI)buttons[i].getUI()).setBorderSize(buttonCard.getBorderSlider().getValue());
 			}
 		});
 
 		buttonCard.getShadowSlider().addChangeListener(l -> {
 			if (!buttonCard.getShadowSlider().getValueIsAdjusting()) {
 				for ( int i = 0; i < buttons.length; i++ ) {
-					CompoundBorder cBorder = (CompoundBorder)buttons[i].getBorder();
-					NeuRaisedBorder border = (NeuRaisedBorder) cBorder.getOutsideBorder();
+					NeuRaisedBorder border = (NeuRaisedBorder) buttons[i].getBorder();
 					border.setShadowOffset(buttonCard.getShadowSlider().getValue());
 					buttons[i].repaint();
 				}
@@ -159,7 +157,7 @@ public class Example1 extends JFrame {
 		panelCard.getBorderSlider().addChangeListener(l -> {
 			if (!panelCard.getBorderSlider().getValueIsAdjusting()) {
 				for ( int i = 0; i < cards.length; i++ ) {
-					((NeuPanelUI)cards[i].getUI()).setBorderWidth(panelCard.getBorderSlider().getValue());
+					((NeuPanelUI)cards[i].getUI()).setBorderSize(panelCard.getBorderSlider().getValue());
 					//					NeuRaisedBorder border = (NeuRaisedBorder) cards[i].getBorder();
 					//					border.setBorderWidth(panelCard.getBorderSlider().getValue());
 					//					cards[i].repaint();
